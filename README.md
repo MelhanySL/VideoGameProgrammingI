@@ -49,7 +49,7 @@ Every project follows the same layout:
 Clone the repository and create a virtual environment at the root:
 
 ```bash
-git clone https://github.com/R3mmurd/VideoGameProgrammingI.git
+git clone https://github.com/MelhanySL/VideoGameProgrammingI.git
 cd VideoGameProgrammingI
 python3 -m venv .venv
 source .venv/bin/activate       # On Windows: .venv\Scripts\activate
@@ -74,4 +74,7 @@ This project is licensed under the terms of the [MIT License](LICENSE).
 
 ## Author
 
-Alejandro Mujica — alejandro.j.mujic4@gmail.com
+| Role | Author | Contact / Info |
+|---|---|---|
+| **Base Framework** | Alejandro Mujica | alejandro.j.mujic4@gmail.com |
+| **Solutions & Student Modifications** | Melhany | GitHub: [@MelhanySL](https://github.com/MelhanySL) |

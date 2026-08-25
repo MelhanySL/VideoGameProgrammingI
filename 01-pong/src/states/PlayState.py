@@ -25,6 +25,17 @@ class PlayState(BaseState):
 
     def update(self, dt: float) -> None:
         pong = self.pong
+
+        ball_center = pong.ball.get_rect().centery  
+        paddle_center = pong.player1.get_rect().centery
+
+        if paddle_center < (ball_center - 2) and pong.ball.x < settings.VIRTUAL_WIDTH / 2:
+            pong.player1.vy = settings.PADDLE_SPEED
+        elif paddle_center > (ball_center + 2) and pong.ball.x < settings.VIRTUAL_WIDTH / 2:
+            pong.player1.vy = -settings.PADDLE_SPEED
+        else:
+            pong.player1.vy = 0
+
         pong.player1.update(dt)
         pong.player2.update(dt)
         pong.ball.update(dt)
@@ -103,16 +114,7 @@ class PlayState(BaseState):
     def on_input(self, input_id: str, input_data: InputData) -> None:
         pong = self.pong
 
-        if input_id in ("p1_up", "p1_down"):
-            if input_data.pressed:
-                pong.player1.vy = (
-                    -settings.PADDLE_SPEED if input_id == "p1_up" else settings.PADDLE_SPEED
-                )
-            elif input_data.released:
-                sign = -1 if input_id == "p1_up" else 1
-                if pong.player1.vy == sign * settings.PADDLE_SPEED:
-                    pong.player1.vy = 0
-        elif input_id in ("p2_up", "p2_down"):
+        if input_id in ("p2_up", "p2_down"):
             if input_data.pressed:
                 pong.player2.vy = (
                     -settings.PADDLE_SPEED if input_id == "p2_up" else settings.PADDLE_SPEED
