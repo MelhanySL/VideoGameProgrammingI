@@ -18,7 +18,13 @@ from gale import input_handler
 
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_ESCAPE, "quit")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RETURN, "confirm")
-input_handler.InputHandler.set_mouse_click_action(input_handler.MOUSE_BUTTON_1, "jump")
+
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_UP, "jump")
+
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_SPACE, "pause")
+
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_LEFT, "left")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RIGHT, "right")
 
 TITLE = "Flappy Bird"
 
@@ -32,6 +38,20 @@ VIRTUAL_HEIGHT = 288
 
 BIRD_WIDTH = 39
 BIRD_HEIGHT = 28
+BIRD_HORIZONTAL_SPEED = 200 
+
+LOG_CLOSE_SPEED = 70 
+LOG_OPEN_SPEED = 50 
+
+HARD_MODE_LOG_MARGIN_TOP = 20
+HARD_MODE_LOG_MARGIN_BOTTOM = 20
+HARD_MODE_GHOST_MIN_INTERVAL = 5.0
+HARD_MODE_GHOST_MAX_INTERVAL = 20.0
+HARD_MODE_INITIAL_LOG_SPAWN_DELAY = 1.5
+
+GHOST_WIDTH = 30
+GHOST_HEIGHT = 27
+GHOSTING_TIME = 5.0
 
 LOG_WIDTH = 70
 LOG_HEIGHT = 288
@@ -60,6 +80,8 @@ TEXTURES = {
     "background": pygame.image.load(BASE_DIR / "assets" / "graphics" / "background.png"),
     "ground": pygame.image.load(BASE_DIR / "assets" / "graphics" / "ground.png"),
     "log": pygame.image.load(BASE_DIR / "assets" / "graphics" / "log.png"),
+    "ghost": pygame.image.load(BASE_DIR / "assets" / "graphics" / "ghost.png"),
+    "ghost_bird": pygame.image.load(BASE_DIR / "assets" / "graphics" / "ghost_bird.png"),
 }
 # The top log of every pair is the same image, flipped upside down.
 TEXTURES["log_inverted"] = pygame.transform.flip(TEXTURES["log"], False, True)
@@ -69,6 +91,10 @@ SOUNDS = {
     "explosion": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "explosion.wav"),
     "hurt": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "hurt.wav"),
     "score": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "score.wav"),
+    "select": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "select.wav"),
+    "confirm": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "confirm.wav"),
+    "collide": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "creaky_door.wav"),
+    "ghost_music": pygame.mixer.Sound(BASE_DIR / "assets"/ "sounds" / "booster_sound.wav"),
 }
 
 pygame.mixer.music.load(BASE_DIR / "assets" / "sounds" / "marios_way.ogg")

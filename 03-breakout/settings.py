@@ -31,6 +31,7 @@ input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RIGHT, "move_ri
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_DOWN, "move_down")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_LEFT, "move_left")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_SPACE, "pause")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_f, "shoot")
 
 TITLE = "Breakout"
 
@@ -73,6 +74,7 @@ SOUNDS = {
     "life": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "life.wav"),
     "grow_up": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "grow_up.wav"),
     "pause": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "pause.wav"),
+    "broken": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "broken_glass.wav"),
 }
 
 TEXTURES = {
@@ -82,7 +84,10 @@ TEXTURES = {
     "spritesheet": pygame.image.load(BASE_DIR / "assets" / "graphics" / "breakout.png"),
     "hearts": pygame.image.load(BASE_DIR / "assets" / "graphics" / "hearts.png"),
     "arrows": pygame.image.load(BASE_DIR / "assets" / "graphics" / "arrows.png"),
+    "cannon": pygame.image.load(BASE_DIR / "assets" / "graphics" / "cannon.png"),
+    "shot": pygame.image.load(BASE_DIR / "assets" / "graphics" / "shot.png"),
 }
+TEXTURES["cannon"] = pygame.transform.smoothscale(TEXTURES["cannon"], (16, 16))
 
 FRAMES = {
     "paddles": generate_paddle_frames(),

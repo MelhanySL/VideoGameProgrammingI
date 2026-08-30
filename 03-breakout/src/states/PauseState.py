@@ -18,6 +18,8 @@ class PauseState(BaseState):
         self.live_factor = params["live_factor"]
         self.points_to_next_live = params["points_to_next_live"]
         self.powerups = params["powerups"]
+        self.bullets = params.get("bullets", [])
+        self.shield_active = params.get("shield_active", False)
         settings.SOUNDS["pause"].play()
 
     def render(self, surface: pygame.Surface) -> None:
@@ -75,5 +77,7 @@ class PauseState(BaseState):
                 points_to_next_live=self.points_to_next_live,
                 live_factor=self.live_factor,
                 powerups=self.powerups,
+                bullets=self.bullets,
+                shield_active=self.shield_active,
                 resume=True,
             )

@@ -32,6 +32,15 @@ class Paddle:
         # The paddle only move horizontally
         self.vx = 0
 
+        self.ball_caught = False
+        self.time_ball_caught = 0.0
+
+        self.cannon_active = False
+        self.cannon_texture = settings.TEXTURES["cannon"]
+    
+        self.cannon_size = 16
+        self.cannon_time = 0.0
+
     def resize(self, size: int) -> None:
         self.size = size
         self.width = (self.size + 1) * 32
@@ -53,5 +62,18 @@ class Paddle:
         else:
             self.x = min(settings.VIRTUAL_WIDTH - self.width, next_x)
 
+        if self.ball_caught:
+            self.time_ball_caught -= dt
+            if self.time_ball_caught <= 0:
+                self.ball_caught = False
+
+        if self.cannon_active:
+            self.cannon_time -= dt
+            if self.cannon_time <= 0:
+                self.cannon_active = False
+
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(self.texture, (self.x, self.y), self.frames[self.skin][self.size])
+        if self.cannon_active:
+            surface.blit(self.cannon_texture, (self.x, self.y - (self.cannon_size // 2)))
+            surface.blit(self.cannon_texture, (self.x + self.width - self.cannon_size, self.y - (self.cannon_size // 2)))

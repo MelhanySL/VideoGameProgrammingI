@@ -19,6 +19,7 @@ from gale.factory import Factory
 import settings
 from src.LogPair import LogPair
 
+from src.GhostPowerUp import GhostPowerUp
 
 class World:
     def __init__(self, generate_logs: bool = False) -> None:
@@ -30,8 +31,20 @@ class World:
         self.last_log_y: float = -settings.LOG_HEIGHT + random.randint(0, 80) + 20
         self.log_pair_factory: Factory = Factory(LogPair)
 
+        self.ghost_factory: Factory = Factory(GhostPowerUp)
+        self.ghosts: List[GhostPowerUp] = []
+
+    def spawn_ghost(self, x:float, y:float) -> None:
+        new_ghost = self.ghost_factory.create(x,y)
+        self.ghosts.append(new_ghost)
+
     def reset(self, generate_logs: bool) -> None:
         self.generate_logs = generate_logs
+        self.logs_spawn_timer = 0.0
+        self.background_x = 0.0
+        self.ground_x = 0.0
+        self.logs.clear()
+        self.ghosts.clear()
 
     def collides(self, rect: pygame.Rect) -> bool:
         if rect.bottom >= settings.VIRTUAL_HEIGHT:
@@ -52,7 +65,7 @@ class World:
                     -settings.LOG_HEIGHT + 10,
                     min(
                         self.last_log_y + random.randint(-20, 20),
-                        settings.VIRTUAL_HEIGHT + 90 - settings.LOG_HEIGHT,
+                        settings.VIRTUAL_HEIGHT + settings.LOGS_GAP - settings.LOG_HEIGHT,
                     ),
                 )
                 self.last_log_y = y
@@ -71,7 +84,11 @@ class World:
         for log_pair in self.logs:
             log_pair.update(dt)
 
+        for ghost in self.ghosts:
+            ghost.update(dt)  
+
         self.logs = [log_pair for log_pair in self.logs if not log_pair.is_out_of_game()]
+        self.ghosts = [ghost for ghost in self.ghosts if not ghost.is_out_of_game()]
 
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(settings.TEXTURES["background"], (round(self.background_x), 0))
@@ -83,3 +100,6 @@ class World:
             settings.TEXTURES["ground"],
             (round(self.ground_x), settings.VIRTUAL_HEIGHT - settings.GROUND_HEIGHT),
         )
+
+        for ghost in self.ghosts:
+            ghost.render(surface)

@@ -20,6 +20,8 @@ from gale.text import render_text
 import settings
 import src.powerups
 
+from src.Bullet import Bullet
+
 
 class PlayState(BaseState):
     def enter(self, **params: dict):
@@ -44,19 +46,51 @@ class PlayState(BaseState):
 
         self.powerups_abstract_factory = AbstractFactory("src.powerups")
 
+        self.bullets = params.get("bullets", [])
+        self.shield_active = params.get("shield_active", False)
+        self.shield_height = 12
+
+        self.shield_texture = pygame.Surface((settings.VIRTUAL_WIDTH, self.shield_height), pygame.SRCALPHA)
+        self.shield_texture.fill((0, 150, 255))
+        self.shield_texture.set_alpha(150)
+
     def update(self, dt: float) -> None:
         self.paddle.update(dt)
 
         for ball in self.balls:
+
+            if ball.caught:
+                ball.x = self.paddle.x + ball.caught_x
+                ball.y = self.paddle.y - ball.height
+                if not self.paddle.ball_caught:
+                    ball.caught = False
+                    ball.vy = random.randint(-170, -100)
+                    ball.vx = random.randint(-80, 80)
+                    continue
             ball.update(dt)
-            ball.solve_world_boundaries()
+
+            if self.shield_active and ball.y > settings.VIRTUAL_HEIGHT - ball.height:
+                ball.y = settings.VIRTUAL_HEIGHT - ball.height - self.shield_height
+                ball.vy = -abs(ball.vy)
+                settings.SOUNDS["wall_hit"].stop()
+                settings.SOUNDS["wall_hit"].play()
+                settings.SOUNDS["broken"].play()
+                self.shield_active = False
+            else:
+                ball.solve_world_boundaries()
 
             # Check collision with the paddle
             if ball.collides(self.paddle):
-                settings.SOUNDS["paddle_hit"].stop()
-                settings.SOUNDS["paddle_hit"].play()
-                ball.rebound(self.paddle)
-                ball.push(self.paddle)
+
+                if self.paddle.ball_caught:
+                    ball.caught = True
+                    ball.caught_x = ball.x - self.paddle.x
+                else: 
+                    settings.SOUNDS["paddle_hit"].stop()
+                    settings.SOUNDS["paddle_hit"].play()
+                    ball.rebound(self.paddle)
+                    ball.push(self.paddle)
+
 
             # Check collision with brickset
             if not ball.collides(self.brickset):
@@ -94,9 +128,68 @@ class PlayState(BaseState):
                         r.centerx - 8, r.centery - 8
                     )
                 )
+            if random.random() < 0.1:
+                r = brick.get_collision_rect()
+                self.powerups.append(
+                    self.powerups_abstract_factory.get_factory("BallCatch").create(
+                        r.centerx - 8, r.centery - 8
+                    )
+                )
+
+            if random.random() < 0.1:
+                r = brick.get_collision_rect()
+                self.powerups.append(
+                    self.powerups_abstract_factory.get_factory("CannonPower").create(
+                        r.centerx - 8, r.centery - 8
+                    )
+                )
+
+            if random.random() < 0.1:
+                r = brick.get_collision_rect()
+                self.powerups.append(
+                    self.powerups_abstract_factory.get_factory("ShieldPower").create(
+                        r.centerx - 8, r.centery - 8
+                    )
+                )
+
+        for bullet in self.bullets:
+            bullet.update(dt)
+
+            if not bullet.active:
+                continue
+            
+            if not bullet.collides(self.brickset):
+                continue
+
+            
+            brick = self.brickset.get_colliding_brick(bullet.get_collision_rect())
+
+            if brick is None:
+                continue
+
+            brick.hit()
+            bullet.active = False
+            self.score += brick.score()
+            # Check earn life
+            if self.score >= self.points_to_next_live:
+                settings.SOUNDS["life"].play()
+                self.lives = min(3, self.lives + 1)
+                self.live_factor += 0.5
+                self.points_to_next_live += settings.LIVE_POINTS_BASE * self.live_factor
+
+            # Check growing up of the paddle
+            if self.score >= self.points_to_next_grow_up:
+                settings.SOUNDS["grow_up"].play()
+                self.points_to_next_grow_up += (
+                    settings.PADDLE_GROW_UP_POINTS * (self.paddle.size + 1) * self.level
+                )
+                self.paddle.inc_size()
+
 
         # Removing all balls that are not in play
         self.balls = [ball for ball in self.balls if ball.active]
+
+        self.bullets = [bullet for bullet in self.bullets if bullet.active]
 
         self.brickset.update(dt)
 
@@ -175,8 +268,14 @@ class PlayState(BaseState):
 
         self.paddle.render(surface)
 
+        if self.shield_active:
+            surface.blit(self.shield_texture, (0, settings.VIRTUAL_HEIGHT - self.shield_height))
+
         for ball in self.balls:
             ball.render(surface)
+
+        for bullet in self.bullets:
+            bullet.render(surface)
 
         for powerup in self.powerups:
             powerup.render(surface)
@@ -193,7 +292,16 @@ class PlayState(BaseState):
             elif input_data.released and self.paddle.vx > 0:
                 self.paddle.vx = 0
         elif input_id == "pause" and input_data.pressed:
-            self.state_machine.change(
+            ball_caughts = [ball for ball in self.balls if ball.caught]
+            
+            if ball_caughts:
+                for ball in ball_caughts:
+                    ball.caught = False
+                    ball.vy = random.randint(-170, -100)
+                    ball.vx = random.randint(-80, 80)
+
+            else:
+                self.state_machine.change(
                 "pause",
                 level=self.level,
                 score=self.score,
@@ -204,4 +312,15 @@ class PlayState(BaseState):
                 points_to_next_live=self.points_to_next_live,
                 live_factor=self.live_factor,
                 powerups=self.powerups,
+                bullets=self.bullets,
+                shield_active=self.shield_active,
             )
+        elif input_id == "shoot" and input_data.pressed:
+            if self.paddle.cannon_active and len(self.bullets) == 0:
+                left_bullet_x = self.paddle.x + self.paddle.cannon_size // 2 - 4
+                right_bullet_x = self.paddle.x + self.paddle.width - self.paddle.cannon_size // 2 - 4
+                bullet_y = self.paddle.y - (self.paddle.cannon_size // 2)
+
+                self.bullets.append(Bullet(left_bullet_x, bullet_y))
+                self.bullets.append(Bullet(right_bullet_x, bullet_y))
+            
