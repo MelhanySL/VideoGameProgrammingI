@@ -49,7 +49,7 @@ class PlayState(BaseState):
         self.bullets = params.get("bullets", [])
         self.shield_active = params.get("shield_active", False)
         self.shield_height = 12
-
+        self.bullet_size = 8
         self.shield_texture = pygame.Surface((settings.VIRTUAL_WIDTH, self.shield_height), pygame.SRCALPHA)
         self.shield_texture.fill((0, 150, 255))
         self.shield_texture.set_alpha(150)
@@ -164,7 +164,7 @@ class PlayState(BaseState):
             
             brick = self.brickset.get_colliding_brick(bullet.get_collision_rect())
 
-            if brick is None:
+            if brick is None or not brick.active:
                 continue
 
             brick.hit()
@@ -317,8 +317,8 @@ class PlayState(BaseState):
             )
         elif input_id == "shoot" and input_data.pressed:
             if self.paddle.cannon_active and len(self.bullets) == 0:
-                left_bullet_x = self.paddle.x + self.paddle.cannon_size // 2 - 4
-                right_bullet_x = self.paddle.x + self.paddle.width - self.paddle.cannon_size // 2 - 4
+                left_bullet_x = self.paddle.x + (self.paddle.cannon_size // 2) - (self.bullet_size //2)
+                right_bullet_x = self.paddle.x + self.paddle.width - (self.paddle.cannon_size // 2) - (self.bullet_size //2)
                 bullet_y = self.paddle.y - (self.paddle.cannon_size // 2)
 
                 self.bullets.append(Bullet(left_bullet_x, bullet_y))
