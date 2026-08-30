@@ -24,3 +24,13 @@ This update expands upon the base Breakout game by introducing multiple power-up
   * **TwoMoreBall**: Spawns two additional balls, creating a multiball scenario.
 * **Pause State**:
   * Passes all active environment variables (bullets, power-ups, active shields, multiple balls) via `params` to ensure no data is lost or desynced when resuming the game.
+
+### ShieldPower (Protective Barrier)
+
+* **Overview**: 
+  The `ShieldPower` is a single-use defensive enhancement designed to prevent ball loss. When collected by the paddle, it deploys a temporary, single-use protective barrier across the full virtual width of the screen, situated directly above the bottom boundary.
+
+* **Technical Execution & Rendering**:
+  * **Collision Detection & Physics**: During the `PlayState` update cycle, if `shield_active` is evaluated as `True`, the ball's Y-coordinate is intercepted before reaching the outer world bounds. 
+  * **Impulse Reversal**: Upon contact with the shield, the vertical velocity component (`vy`) is forcefully inverted using `-abs(ball.vy)`, reflecting the ball upward regardless of its downward momentum angle.
+  * **State Persistence**: The active state of the shield (`shield_active`) is explicitly serialized through the `params` dictionary during `PauseState` transitions, guaranteeing that active barriers remain persistent when resuming the session.
