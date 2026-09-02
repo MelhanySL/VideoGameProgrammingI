@@ -26,10 +26,21 @@ class Board:
         self.tiles: List[List[Tile]] = []
         self._initialize_tiles()
 
+        while not self.matches_possible():
+            self._initialize_tiles()
+
     def render(self, surface: pygame.Surface) -> None:
+        dragged_tile = None
         for row in self.tiles:
             for tile in row:
-                tile.render(surface, self.x, self.y)
+                if tile is not None:
+                    if tile.dragging:
+                        dragged_tile = tile
+                    else:
+                        tile.render(surface, self.x, self.y)
+                    
+        if dragged_tile is not None:
+            dragged_tile.render(surface, self.x, self.y)
 
     def _is_match_generated(self, i: int, j: int, color: int) -> bool:
         if (
@@ -208,3 +219,66 @@ class Board:
                     tweens.append((tile, {"y": tile.i * settings.TILE_SIZE}))
 
         return tweens
+
+
+    def matches_possible(self) -> bool:
+        for i in range(settings.BOARD_HEIGHT):
+            for j in range(settings.BOARD_WIDTH):
+                tile = self.tiles[i][j]
+                if tile is not None and tile.is_powerup:
+                    return True
+                
+        for i in range(settings.BOARD_HEIGHT):
+            for j in range(settings.BOARD_WIDTH):
+                tile = self.tiles[i][j]
+                if tile is None:
+                    continue
+
+                if j < settings.BOARD_WIDTH - 1:
+                    neighbor = self.tiles[i][j + 1]
+                    if neighbor is not None and self._simulate_swap(tile, neighbor):
+                        return True
+
+                if i < settings.BOARD_HEIGHT - 1:
+                    neighbor = self.tiles[i + 1][j]
+
+                    if neighbor is not None and self._simulate_swap(tile, neighbor):
+                        return True
+
+        return False
+
+    def _simulate_swap(self, tile1: Tile, tile2: Tile) -> bool:
+        (
+            self.tiles[tile1.i][tile1.j],
+            self.tiles[tile2.i][tile2.j]
+        ) = (
+            self.tiles[tile2.i][tile2.j],
+            self.tiles[tile1.i][tile1.j]
+        )
+        tile1.i, tile1.j, tile2.i, tile2.j = (
+            tile2.i, 
+            tile2.j, 
+            tile1.i, 
+            tile1.j
+        )
+
+        matches = self.calculate_matches_for([tile1, tile2])
+        self.matches = []
+
+        (
+            self.tiles[tile1.i][tile1.j],
+            self.tiles[tile2.i][tile2.j]
+        ) = (
+            self.tiles[tile2.i][tile2.j],
+            self.tiles[tile1.i][tile1.j]
+        )
+        tile1.i, tile1.j, tile2.i, tile2.j = (
+            tile2.i, 
+            tile2.j, 
+            tile1.i, 
+            tile1.j
+        )
+
+        return matches is not None
+
+

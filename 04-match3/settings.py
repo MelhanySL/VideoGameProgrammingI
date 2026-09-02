@@ -38,6 +38,8 @@ BOARD_HEIGHT = 8
 
 TILE_SIZE = 32
 
+ICON_SIZE = 20
+
 NUM_VARIETIES = 6
 NUM_COLORS = 18
 
@@ -48,11 +50,19 @@ LEVEL_TIME = 60
 
 BASE_DIR = Path(__file__).parent
 
+line_icon = pygame.image.load( BASE_DIR / "assets" / "graphics" / "line.png")
+scaled_line = pygame.transform.smoothscale(line_icon, (ICON_SIZE, ICON_SIZE))
+
+color_icon = pygame.image.load( BASE_DIR / "assets" / "graphics" / "color_bomb.png")
+scaled_color = pygame.transform.smoothscale(color_icon, (ICON_SIZE, ICON_SIZE))
+
 TEXTURES = {
     "background": pygame.image.load(
         BASE_DIR / "assets" / "graphics" / "background.png"
     ),
     "tiles": pygame.image.load(BASE_DIR / "assets" / "graphics" / "match3.png"),
+    "line_clear" : scaled_line,
+    "color_bomb" : scaled_color,
 }
 
 FRAMES = {"tiles": generate_tile_frames(TEXTURES["tiles"])}
