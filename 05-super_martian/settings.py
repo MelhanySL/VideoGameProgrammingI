@@ -31,12 +31,12 @@ input_handler.InputHandler.set_mouse_click_action(input_handler.MOUSE_BUTTON_1, 
 TITLE = "Super Martian"
 
 # Size we want to emulate
-VIRTUAL_WIDTH = 400
-VIRTUAL_HEIGHT = 192
+VIRTUAL_WIDTH = 500
+VIRTUAL_HEIGHT = 240
 
 # Size of our actual window
-WINDOW_WIDTH = VIRTUAL_WIDTH * 4
-WINDOW_HEIGHT = VIRTUAL_HEIGHT * 4
+WINDOW_WIDTH = VIRTUAL_WIDTH * 3
+WINDOW_HEIGHT = VIRTUAL_HEIGHT * 3
 
 PLAYER_SPEED = 80
 
@@ -57,7 +57,7 @@ CAMERA_FOLLOW_RATE = 8.0
 FLYING_CREATURE_MIN_SPAWN_DELAY = 4
 FLYING_CREATURE_MAX_SPAWN_DELAY = 9
 
-NUM_LEVELS = 1
+NUM_LEVELS = 2
 
 BASE_DIR = pathlib.Path(__file__).parent
 
@@ -70,12 +70,15 @@ TEXTURES = {
     "tiles": pygame.image.load(BASE_DIR / "assets" / "graphics" / "tileset.png"),
     "martian": pygame.image.load(BASE_DIR / "assets" / "graphics" / "martian.png"),
     "creatures": pygame.image.load(BASE_DIR / "assets" / "graphics" / "creatures.png"),
+    "castle_tileset": pygame.image.load(BASE_DIR / "assets" / "graphics" / "castle-tileset.png"),
 }
 
 FRAMES = {
     "tiles": frames.generate_frames(TEXTURES["tiles"], 16, 16),
     "martian": frames.generate_frames(TEXTURES["martian"], 16, 20),
     "creatures": frames.generate_frames(TEXTURES["creatures"], 16, 16),
+    "castle_tileset": frames.generate_frames(TEXTURES["castle_tileset"], 16, 16),
+
 }
 
 SOUNDS = {
