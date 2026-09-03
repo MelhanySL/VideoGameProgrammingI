@@ -41,7 +41,12 @@ class PlayState(BaseState):
 
         self.timer = settings.LEVEL_TIME
 
-        self.goal_score = self.level * 1.25 * 1000
+        self.goal_score = self.level * 2 * 1000
+
+        if self.score >= self.goal_score:
+            settings.SOUNDS["next-level"].play()
+            self.state_machine.change("begin", level=self.level + 1, score=self.score)
+            return
 
         # A surface that supports alpha to highlight a selected tile
         self.tile_alpha_surface = pygame.Surface(
@@ -87,11 +92,6 @@ class PlayState(BaseState):
             Timer.clear()
             settings.SOUNDS["game-over"].play()
             self.state_machine.change("game-over", score=self.score)
-
-        if self.score >= self.goal_score:
-            Timer.clear()
-            settings.SOUNDS["next-level"].play()
-            self.state_machine.change("begin", level=self.level + 1, score=self.score)
 
     def render(self, surface: pygame.Surface) -> None:
         self.board.render(surface)
@@ -162,14 +162,6 @@ class PlayState(BaseState):
         tile = self.board.tiles[i][j]
 
         if tile is not None:
-            if tile.is_powerup:
-                self.active = False
-                affected_tiles = tile.activate(self.board)
-                
-                self.board.matches.append(list(affected_tiles))
-                self._calculate_matches([])
-                return
-
             self.is_dragging = True
             self.highlighted_i1 = i
             self.highlighted_j1 = j
@@ -188,6 +180,17 @@ class PlayState(BaseState):
         
         di = abs(i - self.highlighted_i1)
         dj = abs(j - self.highlighted_j1)
+
+        if di == 0 and dj == 0 and tile1.is_powerup:
+            self.active = False
+            
+            tile1.x = tile1.j * settings.TILE_SIZE
+            tile1.y = tile1.i * settings.TILE_SIZE
+            
+            affected_tiles = tile1.activate(self.board)
+            self.board.matches.append(list(affected_tiles))
+            self._calculate_matches([])
+            return
 
         if di <= 1 and dj <= 1 and di != dj and 0 <= i < settings.BOARD_HEIGHT and 0 <= j < settings.BOARD_WIDTH and self.board.tiles[i][j] is not None:
             self.active = False
@@ -253,6 +256,12 @@ class PlayState(BaseState):
         matches = self.board.calculate_matches_for(tiles)
 
         if matches is None:
+            if self.score >= self.goal_score:
+                Timer.clear()
+                settings.SOUNDS["next-level"].play()
+                self.state_machine.change("begin", level=self.level + 1, score=self.score)
+                return
+
             while not self.board.matches_possible():
                 self.board._initialize_tiles()
 
