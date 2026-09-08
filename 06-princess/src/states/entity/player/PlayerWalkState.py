@@ -44,10 +44,15 @@ class PlayerWalkState(BaseEntityState):
 
         if player.interact_requested:
             player.interact_requested = False
-            self.dungeon.current_room.take_adjacent_pot(player)
+            self.dungeon.current_room.interact_with_object(player)
 
             if player.state_machine.current is not self:
                 return
+
+        if self.entity.bow_requested and self.entity.has_bow:
+            self.entity.bow_requested = False
+            self.entity.change_state("shoot-arrow")
+            return
 
         held = player.held
 

@@ -9,6 +9,7 @@ This file contains the class GameObject.
 """
 
 from typing import Any, Dict
+from gale.animation import Animation
 
 import pygame
 
@@ -43,14 +44,42 @@ class GameObject:
         self.takeable = definition.get("takeable", False)
         self.taken = False
 
+        self.interactable = definition.get("interactable", False)
+        self.interacted = False
+
+        self._create_animations(definition)
+
     def get_collision_rect(self) -> pygame.Rect:
         return pygame.Rect(round(self.x), round(self.y), self.width, self.height)
 
     def update(self, dt: float) -> None:
-        pass
+        if self.current_animation is None:
+            return
+
+        self.current_animation.update(dt)
+        
+        if self.current_animation.times_played > 0:
+            self.current_animation.times_played = 0
+            self.current_animation = None
+            self.state = "open"
+
+    def _create_animations(self, definition: Dict[str, Any]) -> Dict[str, Animation]:
+        self.animations = {}
+
+        for name, definition in definition.get("animations", {}).items():
+            self.animations[name] = Animation(
+                definition["frames"],
+                definition.get("interval", 0),
+                loops=definition.get("loops"),
+            )
+
+        self.current_animation = None    
 
     def render(self, surface: pygame.Surface, offset_x: float = 0, offset_y: float = 0) -> None:
-        frame_index = self.states[self.state].get("frame", self.frame_index)
+        if self.current_animation:
+            frame_index = self.current_animation.get_current_frame()
+        else:
+            frame_index = self.states[self.state].get("frame", self.frame_index)
         surface.blit(
             settings.TEXTURES[self.texture_id],
             (self.x + offset_x, self.y + offset_y),

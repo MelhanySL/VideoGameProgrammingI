@@ -38,10 +38,11 @@ class PlayerIdleState(BaseEntityState):
             self.entity.sword_requested = False
             self.entity.change_state("swing-sword")
             return
+ 
 
         if self.entity.interact_requested:
             self.entity.interact_requested = False
-            self.dungeon.current_room.take_adjacent_pot(self.entity)
+            self.dungeon.current_room.interact_with_object(self.entity)
 
             if self.entity.state_machine.current is not self:
                 return
@@ -50,6 +51,12 @@ class PlayerIdleState(BaseEntityState):
 
         if held["move_left"] or held["move_right"] or held["move_up"] or held["move_down"]:
             self.entity.change_state("walk")
+
+
+        if self.entity.bow_requested and self.entity.has_bow:
+            self.entity.bow_requested = False
+            self.entity.change_state("shoot-arrow")
+            return
 
     def render(self, surface: pygame.Surface) -> None:
         anim = self.entity.current_animation

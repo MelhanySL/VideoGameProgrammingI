@@ -24,6 +24,8 @@ from src.states.entity.EntityIdleState import EntityIdleState
 from src.states.entity.EntityWalkState import EntityWalkState
 from src.world.Doorway import Doorway
 
+from gale.timer import Timer
+
 _ENEMY_TYPES = ["skeleton", "slime", "bat", "ghost", "spider"]
 
 # Door archway detection zones, in the same room-local coordinates as
@@ -222,7 +224,7 @@ class Room:
         ):
             player.y = obj.y + obj.height - player.height / 2
 
-    def take_adjacent_pot(self, player: TypeVar("Player")) -> None:
+    def interact_with_object(self, player: TypeVar("Player")) -> None:
         """
         Looks for a takeable object directly in front of the player (one
         tile away, in the direction they're currently facing) and, if
@@ -234,11 +236,10 @@ class Room:
         player_row = int((player_y + player_height / 2) // settings.TILE_SIZE)
 
         for obj in self.objects:
-            if not obj.takeable:
-                continue
-
             obj_col = int((obj.x + obj.width / 2) // settings.TILE_SIZE)
             obj_row = int((obj.y + obj.height / 2) // settings.TILE_SIZE)
+
+            under = player.direction == "up" and obj_col == player_col and obj_row == player_row - 1
 
             adjacent = (
                 (player.direction == "right" and obj_row == player_row and obj_col == player_col + 1)
@@ -247,9 +248,28 @@ class Room:
                 or (player.direction == "down" and obj_col == player_col and obj_row == player_row + 1)
             )
 
-            if adjacent:
+            if adjacent and obj.takeable:
                 self.objects.remove(obj)
                 player.change_state("pot-lift", pot=obj)
+                return
+
+            if under and obj.interactable and not obj.interacted:
+                obj.interacted = True
+                if obj.type == "chest" and "opening_chest" in obj.animations:
+                    obj.current_animation = obj.animations["opening_chest"]
+                    #player.has_bow = True
+
+                    def spawn_and_tween_bow() -> None:
+                        bow = GameObject(GAME_OBJECT_DEFS["bow"], obj.x, obj.y)
+                        self.objects.append(bow)
+                        
+                        Timer.tween(
+                            0.5,
+                            [(bow, {"y": obj.y - settings.TILE_SIZE})],
+                        )
+                        
+                    Timer.after(0.4, spawn_and_tween_bow)
+
                 return
 
     def _generate_walls_and_floors(self) -> None:
@@ -343,6 +363,23 @@ class Room:
                 settings.SOUNDS["door"].play()
 
         switch.on_collide = open_all_doors
+
+        if not self.player.has_bow and random.randint(1, 3) == 1:
+            chest = GameObject(
+                GAME_OBJECT_DEFS["chest"],
+                random.randint(
+                    settings.MAP_RENDER_OFFSET_X + settings.TILE_SIZE,
+                    settings.VIRTUAL_WIDTH - settings.TILE_SIZE * 2 - 16,
+                ),
+                random.randint(
+                    settings.MAP_RENDER_OFFSET_Y + settings.TILE_SIZE,
+                    settings.MAP_HEIGHT * settings.TILE_SIZE
+                    + settings.MAP_RENDER_OFFSET_Y
+                    - settings.TILE_SIZE
+                    - 16,
+                ),
+            )
+            self.objects.append(chest)
 
         for y in range(2, self.height):
             for x in range(2, self.width):

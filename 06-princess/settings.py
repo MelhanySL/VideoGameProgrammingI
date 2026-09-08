@@ -26,6 +26,7 @@ input_handler.InputHandler.set_keyboard_action(input_handler.KEY_DOWN, "move_dow
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_SPACE, "sword")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_RETURN, "enter")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_KP_ENTER, "enter")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_f, "bow")
 
 TITLE = "The Legend of the Princess"
 
@@ -89,6 +90,11 @@ TEXTURES = {
     "character-pot-walk": pygame.image.load(
         BASE_DIR / "assets" / "graphics" / "character_pot_walk.png"
     ),
+    "chests": pygame.image.load(BASE_DIR / "assets" / "graphics" / "chest.png"),
+    "bow": pygame.image.load(BASE_DIR / "assets" / "graphics" / "bow.png"),
+    "character-shoot-an-arrow": pygame.image.load(
+        BASE_DIR / "assets" / "graphics" / "arc-character.png"
+    ),
 }
 
 # Used by Room's gale.tilemap.TileMap: TILE_* ids above are 1-based,
@@ -106,6 +112,11 @@ FRAMES = {
     "entities": frames.generate_frames(TEXTURES["entities"], 16, 16),
     "character-pot-lift": frames.generate_frames(TEXTURES["character-pot-lift"], 16, 32),
     "character-pot-walk": frames.generate_frames(TEXTURES["character-pot-walk"], 16, 32),
+    "chests": frames.generate_frames(TEXTURES["chests"], 16, 16),
+    "bow": frames.generate_frames(TEXTURES["bow"], 16, 16),
+    "character-shoot-an-arrow": frames.generate_frames(
+        TEXTURES["character-shoot-an-arrow"], 32, 32
+    ),
 }
 
 
@@ -135,6 +146,8 @@ SOUNDS = {
         BASE_DIR / "assets" / "sounds" / "heart_taken.wav"
     ),
     "pot-wall": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "pot_wall.wav"),
+    "collect_object": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "collect.wav"),
+    "shoot-arrow": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "arrow-swish.mp3"),
 }
 
 MUSIC = {
