@@ -27,6 +27,10 @@ input_handler.InputHandler.set_keyboard_action(input_handler.KEY_LEFT, "move_lef
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_a, "move_left")
 input_handler.InputHandler.set_keyboard_action(input_handler.KEY_SPACE, "jump")
 input_handler.InputHandler.set_mouse_click_action(input_handler.MOUSE_BUTTON_1, "jump")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_UP, "move_up")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_w, "move_up")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_DOWN, "move_down")
+input_handler.InputHandler.set_keyboard_action(input_handler.KEY_s, "move_down")
 
 TITLE = "Super Martian"
 
@@ -56,6 +60,9 @@ CAMERA_FOLLOW_RATE = 8.0
 # level and the next one spawning.
 FLYING_CREATURE_MIN_SPAWN_DELAY = 4
 FLYING_CREATURE_MAX_SPAWN_DELAY = 9
+
+BLOCK_ID_KEY = 58
+KEY = 90
 
 NUM_LEVELS = 2
 
@@ -88,6 +95,9 @@ SOUNDS = {
     "jump": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "jump.wav"),
     "timer": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "timer.wav"),
     "count": pygame.mixer.Sound(BASE_DIR / "assets" / "sounds" / "count.wav"),
+    "pickup_key": pygame.mixer.Sound(
+        BASE_DIR / "assets" / "sounds" / "pickup_key.wav"
+    ),
 }
 
 SOUNDS["pickup_coin"].set_volume(0.5)

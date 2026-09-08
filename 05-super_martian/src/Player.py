@@ -21,6 +21,10 @@ from src.commands import (
     STOP_JUMP,
     STOP_MOVE_LEFT,
     STOP_MOVE_RIGHT,
+    MOVE_UP,
+    MOVE_DOWN,
+    STOP_MOVE_UP,
+    STOP_MOVE_DOWN,
 )
 from src.states.entities import player_states
 
@@ -40,11 +44,13 @@ class Player(GameEntity):
                 "jump": lambda sm: player_states.JumpState(self, sm),
                 "fall": lambda sm: player_states.FallState(self, sm),
                 "dead": lambda sm: player_states.DeadState(self, sm),
+                "climb": lambda sm: player_states.ClimbState(self, sm),
             },
             animation_defs={
                 "idle": {"frames": [0]},
                 "walk": {"frames": [9, 10], "interval": 0.15},
                 "jump": {"frames": [2]},
+                "climb": {"frames": [5, 6], "interval": 0.15},
             },
         )
         self.score = 0
@@ -57,5 +63,19 @@ class Player(GameEntity):
         )
         self.command_bindings.bind("jump", press=JUMP, release=STOP_JUMP)
 
+        self.command_bindings.bind("move_up", press=MOVE_UP, release=STOP_MOVE_UP)
+        self.command_bindings.bind("move_down", press=MOVE_DOWN, release=STOP_MOVE_DOWN)
+
+        self.move_y_direction: int = 0
+
     def on_input(self, input_id: str, input_data: InputData) -> None:
         self.command_bindings.dispatch(self, input_id, input_data)
+
+    def is_on_ladder(self) -> bool:
+        player_rect = self.get_collision_rect()
+        
+        for ladder_rect in self.game_level.ladders:
+            if player_rect.colliderect(ladder_rect):
+                return True
+                
+        return False

@@ -46,6 +46,7 @@ class GameEntity(mixins.DrawableMixin, mixins.AnimatedMixin, mixins.CollidableMi
         self.tilemap = self.game_level.tilemap
         self.on_ground = False
         self.collided_x = False
+        self.collided_y = False
         self.state_machine = StateMachine(states)
         self.current_animation = None
         self.animations = {}
@@ -67,7 +68,7 @@ class GameEntity(mixins.DrawableMixin, mixins.AnimatedMixin, mixins.CollidableMi
         self.state_machine.update(dt)
         mixins.AnimatedMixin.update(self, dt)
 
-        self.x, self.y, self.collided_x, collided_y = move_and_collide(
+        self.x, self.y, self.collided_x, self.collided_y = move_and_collide(
             self.tilemap,
             self.COLLISION_LAYER,
             self.x,
@@ -78,7 +79,7 @@ class GameEntity(mixins.DrawableMixin, mixins.AnimatedMixin, mixins.CollidableMi
             self.vy * dt,
         )
 
-        if collided_y:
+        if self.collided_y:
             if self.vy > 0:
                 self.on_ground = True
             self.vy = 0

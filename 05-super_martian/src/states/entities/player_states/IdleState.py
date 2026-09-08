@@ -23,5 +23,9 @@ class IdleState(BaseEntityState):
             self.entity.change_state("jump")
             return
 
+        if self.entity.is_on_ladder() and self.entity.move_y_direction != 0:
+            self.entity.change_state("climb")
+            return
+
         if self.entity.move_direction != 0:
             self.entity.change_state("walk")

@@ -29,6 +29,8 @@ class GameLevel:
         self.tilemap = load_tiled_map(settings.TILEMAPS[num_level])
         self.creatures = []
         self.items = []
+        self.ladders = []
+        self.blocks = []
 
         for obj in self.tilemap.object_layers.get("creatures", []):
             self.add_creature(
@@ -52,6 +54,26 @@ class GameLevel:
                     "height": obj.height,
                 }
             )
+
+        for obj in self.tilemap.object_layers.get("ladders", []):
+            ladder_rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+            self.ladders.append(ladder_rect)
+
+        for obj in self.tilemap.object_layers.get("block", []):
+            solid_frame = obj.properties.get("solid_frame", settings.BLOCK_ID_KEY)
+            target_score = obj.properties.get("target_score", 50)
+            empty_frame = obj.properties.get("empty_frame", 0)
+
+            self.blocks.append({
+                "rect": pygame.Rect(obj.x, obj.y, obj.width, obj.height),
+                "active": True,
+                "spawned": False,
+                "solid_frame": solid_frame,
+                "target_score": target_score,
+                "empty_frame": empty_frame,
+                "col": int(obj.x // self.tilemap.tile_width),
+                "row": int(obj.y // self.tilemap.tile_height)
+            })
 
         self._schedule_flying_creature_spawn()
 
@@ -141,3 +163,36 @@ class GameLevel:
         for item in self.items:
             if item.active:
                 item.render(surface, camera)
+
+
+    def spawn_key(self, x: float, y: float, empty_frame:int) -> None:
+        col = int(x // self.tilemap.tile_width)
+        row = int(y // self.tilemap.tile_height)
+
+        self.tilemap.set_gid("ground", row, col, empty_frame)
+
+        self.add_item({
+            "item_name": "keys",
+            "frame_index": settings.KEY,
+            "x": x,
+            "y": y,
+            "width": 16,
+            "height": 16
+        })
+        
+        new_key = self.items[-1]
+        
+        new_key.collidable = False 
+        
+        def enable_collision():
+            new_key.collidable = True
+
+        Timer.tween(
+            0.5,
+            [(new_key, {"y": y - 16})],
+            on_finish=enable_collision
+        )
+
+    def materialize_block(self, block: Dict[str, Any]) -> None:
+        self.tilemap.set_gid("ground", block["row"], block["col"], block["solid_frame"])
+        block["spawned"] = True

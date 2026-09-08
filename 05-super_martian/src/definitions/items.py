@@ -28,6 +28,11 @@ def pickup_coin(
     player.coins_counter[color] += 1
     Timer.after(time, lambda: coin.respawn())
 
+def pickup_key(key: GameItem, player: Player):
+    settings.SOUNDS["pickup_key"].stop()
+    settings.SOUNDS["pickup_key"].play()
+    player.score += 100
+
 
 def pickup_green_coin(coin: GameItem, player: Player):
     pickup_coin(coin, player, 1, 62, random.uniform(2, 4))
@@ -70,6 +75,15 @@ ITEMS: Dict[str, Dict[int, Dict[str, Any]]] = {
             "consumable": True,
             "collidable": True,
             "on_consume": pickup_yellow_coin,
+        },
+    },
+
+    "keys": {
+        90: {
+            "texture_id": "castle_tileset", 
+            "consumable": True,
+            "collidable": True,
+            "on_consume": pickup_key,
         },
     }
 }

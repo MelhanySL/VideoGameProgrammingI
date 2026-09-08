@@ -53,9 +53,34 @@ class StopJumpCommand(Command):
         receiver.jump_held = False
 
 
+
+class MoveUpCommand(Command):
+    def execute(self, receiver, dt: float = 0.0) -> None:
+        receiver.move_y_direction = -1
+
+class MoveDownCommand(Command):
+    def execute(self, receiver, dt: float = 0.0) -> None:
+        receiver.move_y_direction = 1
+
+class StopMoveUpCommand(Command):
+    def execute(self, receiver, dt: float = 0.0) -> None:
+        if receiver.move_y_direction < 0:
+            receiver.move_y_direction = 0
+
+class StopMoveDownCommand(Command):
+    def execute(self, receiver, dt: float = 0.0) -> None:
+        if receiver.move_y_direction > 0:
+            receiver.move_y_direction = 0
+
+
 MOVE_LEFT = MoveLeftCommand()
 MOVE_RIGHT = MoveRightCommand()
 STOP_MOVE_LEFT = StopMoveLeftCommand()
 STOP_MOVE_RIGHT = StopMoveRightCommand()
 JUMP = JumpCommand()
 STOP_JUMP = StopJumpCommand()
+
+MOVE_UP = MoveUpCommand()
+MOVE_DOWN = MoveDownCommand()
+STOP_MOVE_UP = StopMoveUpCommand()
+STOP_MOVE_DOWN = StopMoveDownCommand()

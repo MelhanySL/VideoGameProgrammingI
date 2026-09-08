@@ -19,6 +19,10 @@ class FallState(BaseEntityState):
     def update(self, dt: float) -> None:
         self.entity.jump_requested = False
 
+        if self.entity.is_on_ladder() and self.entity.move_y_direction != 0:
+            self.entity.change_state("climb")
+            return
+
         if self.entity.move_direction != 0:
             self.entity.flipped = self.entity.move_direction < 0
         self.entity.vx = settings.PLAYER_SPEED * self.entity.move_direction
