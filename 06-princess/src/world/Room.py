@@ -183,7 +183,7 @@ class Room:
             for entity in self.entities:
                 if projectile.dead:
                     break
-
+            
                 if not entity.dead and projectile.collides(entity):
                     entity.damage(1)
                     settings.SOUNDS["hit-enemy"].play()
@@ -257,7 +257,6 @@ class Room:
                 obj.interacted = True
                 if obj.type == "chest" and "opening_chest" in obj.animations:
                     obj.current_animation = obj.animations["opening_chest"]
-                    #player.has_bow = True
 
                     def spawn_and_tween_bow() -> None:
                         bow = GameObject(GAME_OBJECT_DEFS["bow"], obj.x, obj.y)

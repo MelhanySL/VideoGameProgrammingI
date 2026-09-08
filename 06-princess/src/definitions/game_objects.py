@@ -100,4 +100,21 @@ GAME_OBJECT_DEFS: Dict[str, Dict[str, Any]] = {
         },
         "on_consume": _pickup_bow,
     },
+    "arrow": {
+        "type": "arrow",
+        "texture": "arrow",
+        "frame": 1,
+        "width": 16,
+        "height": 16,
+        "solid": False,
+        "consumable": False,
+        "default_state": "default",
+        "takeable": False,
+        "states": {
+            "up": {"frame": 1},
+            "down": {"frame": 3},
+            "left": {"frame": 4},
+            "right": {"frame": 2},
+        },
+    },
 }

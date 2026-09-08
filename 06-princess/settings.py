@@ -95,7 +95,9 @@ TEXTURES = {
     "character-shoot-an-arrow": pygame.image.load(
         BASE_DIR / "assets" / "graphics" / "arc-character.png"
     ),
+    "arrow": pygame.image.load(BASE_DIR / "assets" / "graphics" / "flechas.png"),
 }
+TEXTURES["arrow"] = pygame.transform.scale(TEXTURES["arrow"], (32, 32))
 
 # Used by Room's gale.tilemap.TileMap: TILE_* ids above are 1-based,
 # matching this tileset's default first_gid, so they double as gids.
@@ -117,6 +119,8 @@ FRAMES = {
     "character-shoot-an-arrow": frames.generate_frames(
         TEXTURES["character-shoot-an-arrow"], 32, 32
     ),
+    "bow": frames.generate_frames(TEXTURES["bow"], 16, 16),
+    "arrow": frames.generate_frames(TEXTURES["arrow"], 16, 16),
 }
 
 
