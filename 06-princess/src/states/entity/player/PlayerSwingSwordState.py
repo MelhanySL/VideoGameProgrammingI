@@ -71,9 +71,27 @@ class PlayerSwingSwordState(BaseEntityState):
             return
 
         for entity in self.dungeon.current_room.entities:
-            if entity.collides(self.sword_hitbox):
-                entity.damage(1)
-                settings.SOUNDS["hit-enemy"].play()
+            if entity.health <= 0 or entity.invulnerable:
+                continue
+
+            is_boss = getattr(entity, "is_boss", False)
+            hit = False
+
+            if is_boss:
+                expanded_hitbox = self.sword_hitbox.inflate(32, 32)
+                hit = entity.get_collision_rect().colliderect(expanded_hitbox)
+            else:
+                hit = entity.collides(self.sword_hitbox)
+
+            if hit:
+                if is_boss and getattr(entity, "is_immune", True):
+                    settings.SOUNDS["pot-wall"].play() 
+                else:
+                    entity.damage(1)
+                    settings.SOUNDS["hit-enemy"].play()
+                    if is_boss:
+                        entity.change_state("hurt")
+                        entity.go_invulnerable(0.7)
 
         if self.entity.current_animation.times_played > 0:
             self.entity.current_animation.times_played = 0

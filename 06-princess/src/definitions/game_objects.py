@@ -108,7 +108,7 @@ GAME_OBJECT_DEFS: Dict[str, Dict[str, Any]] = {
         "height": 16,
         "solid": False,
         "consumable": False,
-        "default_state": "default",
+        "default_state": "up",
         "takeable": False,
         "states": {
             "up": {"frame": 1},
@@ -116,5 +116,26 @@ GAME_OBJECT_DEFS: Dict[str, Dict[str, Any]] = {
             "left": {"frame": 4},
             "right": {"frame": 2},
         },
+    },
+    "fireball": {
+        "type": "fireball",
+        "texture": "fireball",
+        "frame": 1,
+        "width": 16,
+        "height": 16,
+        "solid": False,
+        "consumable": False,
+        "default_state": "fire",
+        "takeable": False,
+        "states": {
+            "fire": {"frame": 2},
+        },
+        "animations": {
+            "fire": {
+                "frames": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                "interval": 0.02,
+                "loops": 1
+            }
+        }
     },
 }

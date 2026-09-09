@@ -18,6 +18,8 @@ from gale.timer import Timer
 import settings
 from src.world.Room import Room
 
+import random
+
 
 class Dungeon:
     def __init__(
@@ -47,7 +49,25 @@ class Dungeon:
         PlayerWalkState/PlayerPotWalkState.
         """
         self.shifting = True
-        self.next_room = Room(self.player, self.on_game_over)
+
+        just_defeated = getattr(self.player, "just_defeated_boss", False)
+
+        is_boss = getattr(self.player, "has_bow", False) and not just_defeated and random.randint(1, 10) <= 4
+
+        if just_defeated:
+            self.player.just_defeated_boss = False
+            
+        direction = None
+        if shift_x < 0:
+            direction = "right"
+        elif shift_x > 0:
+            direction = "left"
+        elif shift_y < 0:
+            direction = "bottom"
+        elif shift_y > 0:
+            direction = "top"
+
+        self.next_room = Room(self.player, self.on_game_over, is_boss_room=is_boss, entrance_direction=direction)
 
         # Start all doors in next room as open until we get in.
         for doorway in self.next_room.doorways:

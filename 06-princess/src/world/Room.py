@@ -22,6 +22,11 @@ from src.Entity import Entity
 from src.GameObject import GameObject
 from src.states.entity.EntityIdleState import EntityIdleState
 from src.states.entity.EntityWalkState import EntityWalkState
+from src.states.entity.boss.BossIdleState import BossIdleState
+from src.states.entity.boss.BossAttackState import BossAttackState
+from src.states.entity.boss.BossWalkState import BossWalkState
+from src.states.entity.boss.BossHurtState import BossHurtState
+from src.states.entity.boss.BossDeathState import BossDeathState
 from src.world.Doorway import Doorway
 
 from gale.timer import Timer
@@ -76,7 +81,9 @@ def _doorway_opening_for(
     """
     for direction, zone in _DOORWAY_ZONES.items():
         if zone.colliderect(rect):
-            return doorways_by_direction[direction].get_collision_rect()
+            doorway = doorways_by_direction.get(direction)
+            if doorway:
+                return doorway.get_collision_rect()
 
     return None
 
@@ -86,10 +93,13 @@ class Room:
         self,
         player: TypeVar("Player"),
         on_game_over: Callable[[], None],
+        is_boss_room: bool = False,
+        entrance_direction: Optional[str] = None
     ) -> None:
         # Reference to player for collisions, etc.
         self.player = player
         self.on_game_over = on_game_over
+        self.is_boss_room = is_boss_room
 
         self.width = settings.MAP_WIDTH
         self.height = settings.MAP_HEIGHT
@@ -99,10 +109,16 @@ class Room:
         self._generate_walls_and_floors()
 
         self.entities: List[Entity] = []
-        self._generate_entities()
+        #self._generate_entities()
 
         self.objects: List[GameObject] = []
-        self._generate_objects()
+        #self._generate_objects()
+
+        if self.is_boss_room and entrance_direction:
+            self._generate_boss(entrance_direction)
+        else:
+            self._generate_entities()
+            self._generate_objects()
 
         # Doorways that lead to other dungeon rooms.
         self.doorways = [
@@ -111,6 +127,10 @@ class Room:
             Doorway("left", False, self),
             Doorway("right", False, self),
         ]
+
+        if self.is_boss_room and entrance_direction:
+            self.doorways = [door for door in self.doorways if door.direction == entrance_direction]
+
         self._doorways_by_direction = {
             doorway.direction: doorway for doorway in self.doorways
         }
@@ -134,9 +154,8 @@ class Room:
         self.player.update(dt)
 
         for entity in self.entities:
-            if entity.health <= 0:
+            if entity.health <= 0 and not getattr(entity, "is_boss", False):
                 entity.dead = True
-
                 # Chance to drop a heart.
                 if not entity.dropped and random.randint(1, 10) == 1:
                     self.objects.append(
@@ -145,24 +164,48 @@ class Room:
 
                 # Whether the entity dropped or not, it is assumed that it did.
                 entity.dropped = True
+
+            elif getattr(entity, "is_boss", False) and entity.health <= 0:
+                if not getattr(entity, "is_dying", False):
+                    entity.is_dying = True
+                    entity.change_state("death")
+                entity.process_ai(self, dt)
+                entity.update(dt)
+
             elif not entity.dead:
                 entity.process_ai(self, dt)
                 entity.update(dt)
 
+                if getattr(entity, "is_boss", False) and not getattr(entity, "is_immune", True):
+                    entity.immunity_timer -= dt
+                    if entity.immunity_timer <= 0:
+                        entity.is_immune = True
+
             # Collision between the player and entities in the room.
             if (
                 not entity.dead
+                and entity.health > 0
                 and self.player.collides(entity)
                 and not self.player.invulnerable
             ):
                 settings.SOUNDS["hit-player"].play()
-                self.player.damage(1)
+                if getattr(entity, "is_boss", False):
+                    self.player.damage(2)
+                else:
+                    self.player.damage(1)
                 self.player.go_invulnerable(1.5)
 
                 if self.player.health == 0:
                     self.on_game_over()
 
         self.entities = [entity for entity in self.entities if not entity.dead]
+
+        if getattr(self, "is_boss_room", False) and not self.entities:
+            for doorway in self.doorways:
+                if not doorway.open:
+                    doorway.open = True
+                    settings.SOUNDS["door"].play()
+                    self.player.just_defeated_boss = True
 
         for obj in list(self.objects):
             obj.update(dt)
@@ -180,14 +223,38 @@ class Room:
         for projectile in list(self.projectiles):
             projectile.update(dt)
 
-            for entity in self.entities:
-                if projectile.dead:
-                    break
-            
-                if not entity.dead and projectile.collides(entity):
-                    entity.damage(1)
-                    settings.SOUNDS["hit-enemy"].play()
+            if getattr(projectile, "is_enemy_projectile", False):
+                if not projectile.dead and not self.player.invulnerable and projectile.collides(self.player):
+                    settings.SOUNDS["hit-player"].play()
+                    self.player.damage(self.player.health)
                     projectile.dead = True
+                    self.on_game_over()
+            else:  
+                for entity in self.entities:
+                    if projectile.dead:
+                        break
+
+                    if not entity.dead and projectile.collides(entity) and entity.health > 0:
+                        is_boss = getattr(entity, "is_boss", False)
+                        
+                        if is_boss:
+                            if projectile.obj.type == "arrow":
+                                entity.is_immune = False
+                                entity.immunity_timer = 4.0
+                                settings.SOUNDS["hit-enemy"].play()
+                                entity.change_state("hurt")
+                                entity.go_invulnerable(0.7)
+                            elif getattr(entity, "is_immune", True):
+                                settings.SOUNDS["pot-wall"].play()
+                            else:
+                                entity.damage(1)
+                                settings.SOUNDS["hit-enemy"].play()
+                                entity.change_state("hurt") 
+                                entity.go_invulnerable(0.7)
+                        else:
+                            entity.damage(1)
+                            settings.SOUNDS["hit-enemy"].play()
+                        projectile.dead = True
 
             if projectile.dead:
                 self.projectiles.remove(projectile)
@@ -334,6 +401,52 @@ class Room:
             entity.change_state("walk")
             self.entities.append(entity)
 
+    def _generate_boss(self, entrance_direction: str) -> None:
+        center_x = settings.MAP_RENDER_OFFSET_X + (settings.MAP_WIDTH * settings.TILE_SIZE) // 2
+        center_y = settings.MAP_RENDER_OFFSET_Y + (settings.MAP_HEIGHT * settings.TILE_SIZE) // 2
+
+        boss_x = center_x
+        boss_y = center_y
+        offset = settings.TILE_SIZE * 3
+
+        if entrance_direction == "left":
+            boss_x = settings.MAP_RENDER_OFFSET_X + settings.MAP_WIDTH * settings.TILE_SIZE - offset
+        elif entrance_direction == "right":
+            boss_x = settings.MAP_RENDER_OFFSET_X + offset
+        elif entrance_direction == "top":
+            boss_y = settings.MAP_RENDER_OFFSET_Y + settings.MAP_HEIGHT * settings.TILE_SIZE - offset
+        elif entrance_direction == "bottom":
+            boss_y = settings.MAP_RENDER_OFFSET_Y + offset
+
+        definition = ENTITY_DEFS.get("vampire")
+
+        boss = Entity(
+            x=boss_x, 
+            y=boss_y,
+            width=24, 
+            height=32,
+            walk_speed=definition.get("walk_speed", 40),
+            health=4,
+            animation_defs=definition["animations"],
+            states={},
+        )
+
+        boss.offset_x = 12
+        boss.offset_y = 24
+        boss.is_boss = True
+        boss.is_immune = True
+        boss.immunity_timer = 0
+
+        boss.state_machine.states = {
+            "walk": lambda sm, e=boss: BossWalkState(e, sm),
+            "idle": lambda sm, e=boss: BossIdleState(e, sm),
+            "attack": lambda sm, e=boss: BossAttackState(e, sm),
+            "hurt": lambda sm, e=boss: BossHurtState(e, sm),
+            "death": lambda sm, e=boss: BossDeathState(e, sm),
+        }
+        boss.change_state("idle")
+        self.entities.append(boss)
+
     def _generate_objects(self) -> None:
         """Randomly creates an assortment of obstacles for the player to navigate around."""
         switch = GameObject(
@@ -363,22 +476,20 @@ class Room:
 
         switch.on_collide = open_all_doors
 
-        if not self.player.has_bow and random.randint(1, 3) == 1:
-            chest = GameObject(
-                GAME_OBJECT_DEFS["chest"],
-                random.randint(
-                    settings.MAP_RENDER_OFFSET_X + settings.TILE_SIZE,
-                    settings.VIRTUAL_WIDTH - settings.TILE_SIZE * 2 - 16,
-                ),
-                random.randint(
-                    settings.MAP_RENDER_OFFSET_Y + settings.TILE_SIZE,
-                    settings.MAP_HEIGHT * settings.TILE_SIZE
-                    + settings.MAP_RENDER_OFFSET_Y
-                    - settings.TILE_SIZE
-                    - 16,
-                ),
-            )
+        if not self.player.has_bow:
+            self.player.rooms_without_chest = getattr(self.player, "rooms_without_chest", 0) + 1
+
+        if (self.player.rooms_without_chest >= 4 or random.randint(1, 3) == 1) and not self.player.has_bow:
+            chest_col = random.randint(2, settings.MAP_WIDTH - 3)
+            chest_row = random.randint(2, settings.MAP_HEIGHT - 4)
+            
+            chest_x = settings.MAP_RENDER_OFFSET_X + (chest_col * settings.TILE_SIZE)
+            chest_y = settings.MAP_RENDER_OFFSET_Y + (chest_row * settings.TILE_SIZE)
+            
+            chest = GameObject(GAME_OBJECT_DEFS["chest"], chest_x, chest_y)
             self.objects.append(chest)
+
+            self.player.rooms_without_chest = 0
 
         for y in range(2, self.height):
             for x in range(2, self.width):

@@ -96,6 +96,11 @@ TEXTURES = {
         BASE_DIR / "assets" / "graphics" / "arc-character.png"
     ),
     "arrow": pygame.image.load(BASE_DIR / "assets" / "graphics" / "flechas.png"),
+    "vampire-idle": pygame.image.load(BASE_DIR / "assets" / "graphics" / "Vampire_Idle.png"),
+    "vampire-walk": pygame.image.load(BASE_DIR / "assets" / "graphics" / "Vampire_Walk.png"),
+    "vampire-attack": pygame.image.load(BASE_DIR / "assets" / "graphics" / "Vampire_Attack.png"),
+    "vampire-hurt": pygame.image.load(BASE_DIR / "assets" / "graphics" / "Vampire_Death.png"),
+    "fireball": pygame.image.load(BASE_DIR / "assets" / "graphics" / "Fireball.png"),
 }
 TEXTURES["arrow"] = pygame.transform.scale(TEXTURES["arrow"], (32, 32))
 
@@ -121,6 +126,11 @@ FRAMES = {
     ),
     "bow": frames.generate_frames(TEXTURES["bow"], 16, 16),
     "arrow": frames.generate_frames(TEXTURES["arrow"], 16, 16),
+    "vampire-idle": frames.generate_frames(TEXTURES["vampire-idle"], 64, 64),
+    "vampire-walk": frames.generate_frames(TEXTURES["vampire-walk"], 64, 64),
+    "vampire-attack": frames.generate_frames(TEXTURES["vampire-attack"], 64, 64),
+    "vampire-hurt": frames.generate_frames(TEXTURES["vampire-hurt"], 64, 64),
+    "fireball": frames.generate_frames(TEXTURES["fireball"], 16, 16),
 }
 
 
