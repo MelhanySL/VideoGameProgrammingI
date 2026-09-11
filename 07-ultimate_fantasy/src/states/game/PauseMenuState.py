@@ -14,15 +14,28 @@ ConfirmState) if the current game has progress since its last save (see
 World.dirty), and proceeds however the player answers.
 """
 
-from typing import Any
+from typing import Any, NamedTuple
 
 import pygame
 
 from gale.save import SaveError, SaveManager
 from gale.state import BaseState
+from gale.ui.progress_bar import ProgressBar
 
 import settings
 from src.gui.Menu import Menu
+from src.gui.Panel import Panel
+from src.gui.theme import BAR_THEME
+
+from src.states.game.PauseSelectTargetState import PauseSelectTargetState
+from src.states.game.PauseSelectActionState import PauseSelectActionState
+
+class CharacterPanel(NamedTuple):
+    panel: Panel
+    character: Any
+    hp_bar: ProgressBar
+    exp_bar: ProgressBar
+
 
 UNSAVED_LOAD_WARNING = (
     "You have unsaved progress. Do you want to save the current game before loading another?"
@@ -37,12 +50,13 @@ class PauseMenuState(BaseState):
         self.play_state = play_state
 
         self.menu = Menu(
-            settings.VIRTUAL_WIDTH / 2 - 70,
-            settings.VIRTUAL_HEIGHT / 2 - 48,
-            140,
-            96,
+            10,
+            settings.VIRTUAL_HEIGHT / 2 - 60,
+            130,
+            120,
             items=[
                 ("Continue", self.close),
+                ("Actions", self._actions),
                 ("Save game", self._save),
                 ("Load another game", self._load_another),
                 ("Quit", self._quit),
@@ -50,8 +64,66 @@ class PauseMenuState(BaseState):
             font=settings.FONTS["small"],
         )
 
+        self.panels = []
+        start_x = 145
+        start_y = 20
+        width = 115
+        height = 85
+        padding_x = 5
+        padding_y = 10
+
+        idx = 0
+        for char_id in sorted(self.play_state.world.party.characters.keys()):
+            character = self.play_state.world.party.characters[char_id]
+            row = idx // 2
+            col = idx % 2
+            px = start_x + col * (width + padding_x)
+            py = start_y + row * (height + padding_y)
+            panel = Panel(px, py, width, height)
+
+            hp_bar = ProgressBar(
+                px + 5,
+                py + 37,
+                width - 10,
+                4,
+                value=character.current_hp,
+                max_value=character.hp,
+                color=pygame.Color(189, 32, 32),
+                theme=BAR_THEME,
+            )
+
+            exp_bar = ProgressBar(
+                px + 5,
+                py + 69,
+                width - 10,
+                4,
+                value=character.current_exp,
+                max_value=character.exp_to_level,
+                color=pygame.Color(32, 32, 189),
+                theme=BAR_THEME,
+            )
+
+            self.panels.append(CharacterPanel(panel, character, hp_bar, exp_bar))
+            idx += 1
+
     def close(self) -> None:
         self.state_machine.pop()
+
+    def _actions(self) -> None:
+        def on_character_selected(character: Any) -> None:
+            self.state_machine.push(
+                PauseSelectActionState(self.state_machine),
+                caster=character,
+                panels=self.panels,
+                on_cancel=lambda: None
+            )
+
+        self.state_machine.push(
+            PauseSelectTargetState(self.state_machine),
+            panels=self.panels,
+            on_target_selected=on_character_selected,
+            on_cancel=lambda: None
+        )
 
     # -- save --------------------------------------------------------------
 
@@ -205,5 +277,43 @@ class PauseMenuState(BaseState):
         elif input_id == "enter":
             self.menu.confirm()
 
+    def _draw_text(
+        self,
+        surface: pygame.Surface,
+        text: str,
+        x: float,
+        y: float,
+        color=(255, 255, 255),
+    ) -> None:
+        font = settings.FONTS["small"]
+        shadow = font.render(text, True, (0, 0, 0))
+        surface.blit(shadow, (x + 1, y + 1))
+        surf = font.render(text, True, color)
+        surface.blit(surf, (x, y))
+
     def render(self, surface: pygame.Surface) -> None:
         self.menu.render(surface)
+
+        for panel, character, hp_bar, exp_bar in self.panels:
+            panel.render(surface)
+
+            if character.current_animation is not None:
+                surface.blit(
+                    settings.TEXTURES[character.texture],
+                    (panel.x + 5, panel.y + 5),
+                    character.current_animation.get_current_frame(),
+                )
+
+            self._draw_text(surface, character.name, panel.x + 70, panel.y + 5)
+            
+            if character.dead:
+                self._draw_text(surface, "DEATH", panel.x + 75, panel.y + 20, (255, 50, 50))
+
+            self._draw_text(surface, f"Nivel: {character.level}", panel.x + 25, panel.y + 10)
+            self._draw_text(surface, f"HP: {int(character.current_hp)}/{int(character.hp)}", panel.x + 5, panel.y + 27)
+            hp_bar.render(surface)
+
+            self._draw_text(surface, f"MP: {int(character.magic)}", panel.x + 5, panel.y + 45)
+            self._draw_text(surface, f"EXP: {int(character.current_exp)}/{int(character.exp_to_level)}", panel.x + 5, panel.y + 59)
+            exp_bar.render(surface)
+        

@@ -29,7 +29,7 @@ import settings
 class BattleMessageState(BaseState):
     def enter(
         self,
-        battle_state: Any,
+        battle_state: Optional[Any] = None,
         message: str = "",
         on_close: Optional[Callable[[], None]] = None,
         can_input: bool = True,
@@ -53,9 +53,10 @@ class BattleMessageState(BaseState):
         self._on_close()
 
     def update(self, dt: float) -> None:
-        for enemy in self.battle_state.enemies:
-            if not enemy.dead:
-                enemy.update(dt)
+        if self.battle_state is not None:
+            for enemy in self.battle_state.enemies:
+                if not enemy.dead:
+                    enemy.update(dt)
 
     def on_input(self, input_id: str, input_data: Any) -> None:
         if not self.can_input:
@@ -66,3 +67,4 @@ class BattleMessageState(BaseState):
 
     def render(self, surface: pygame.Surface) -> None:
         self.textbox.render(surface)
+        
