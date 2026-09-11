@@ -216,15 +216,34 @@ class BattleState(BaseState):
         )
         self.tilemap.render(battle_area)
 
+        font = settings.FONTS["small"]
+
+        def draw_cooldown(entity: Any, y_offset: int) -> None:
+            if getattr(entity, "cooldown", 0) > 0:
+                text = f"{max(0.0, round(entity.cooldown, 1))}s"
+                color = (255, 255, 0)
+            else:
+                text = "READY!"
+                color = (0, 255, 0)
+            
+            shadow = font.render(text, True, (0, 0, 0))
+            surf = font.render(text, True, color)
+            x = entity.x + (entity.width - surf.get_width()) / 2
+            y = entity.y - y_offset
+            surface.blit(shadow, (x + 1, y + 1))
+            surface.blit(surf, (x, y))
+
         for enemy in self.enemies:
             if not enemy.dead:
                 enemy.render(surface)
                 enemy.energy_bar.render(surface)
+                draw_cooldown(enemy, 25)
 
         for character in self.party.characters.values():
             if not character.dead:
                 character.render(surface)
                 character.energy_bar.render(surface)
                 character.exp_bar.render(surface)
+                draw_cooldown(character, 25)
 
         self.bottom_panel.render(surface)

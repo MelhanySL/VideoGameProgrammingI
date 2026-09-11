@@ -30,9 +30,9 @@ class SelectActionState(BaseState):
         self.on_action_selected = on_action_selected
 
         items = [
-            (action["name"], self._make_selector(action)) for action in entity.actions
+            (f"{action['name']} ({action.get('cooldown', entity.rest_time)}s)", self._make_selector(action)) for action in entity.actions
         ]
-        items.append(("Nothing", self._nothing))
+        items.append(("Nothing (1.0s)", self._nothing))
 
         self.menu = Menu(
             0, settings.VIRTUAL_HEIGHT - 64, settings.VIRTUAL_WIDTH, 64, items=items
@@ -43,6 +43,8 @@ class SelectActionState(BaseState):
 
     def _select_action(self, action: Dict[str, Any]) -> None:
         from src.states.game.SelectTargetState import SelectTargetState
+
+        self.entity.cooldown = action.get("cooldown", self.entity.rest_time)
 
         if action["target_type"] == "enemy":
             targets: List[Any] = self.battle_state.enemies
@@ -86,6 +88,7 @@ class SelectActionState(BaseState):
         )
 
     def _nothing(self) -> None:
+        self.entity.cooldown = 1.0
         self.state_machine.pop()
         self.on_action_selected()
 

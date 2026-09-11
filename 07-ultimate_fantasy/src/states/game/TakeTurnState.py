@@ -29,43 +29,66 @@ class TakeTurnState(BaseState):
     def enter(self, battle_state: Any) -> None:
         self.battle_state = battle_state
         self.enemy_attacks_in_a_row = 0
-        self._take_party_turn(0)
+        self.turn_active = False
+
+        self.entities = []
+        for character in self.battle_state.party.characters.values():
+            character.cooldown = random.uniform(0, 1.0)
+            self.entities.append(character)
+
+        for enemy in self.battle_state.enemies:
+            enemy.cooldown = random.uniform(0, 1.0)
+            self.entities.append(enemy)
+
+    def update(self, dt: float) -> None:
+        for enemy in self.battle_state.enemies:
+            if not enemy.dead:
+                enemy.update(dt)
+
+        if self.turn_active:
+            return
+
+        for entity in self.entities:
+            if entity.dead:
+                continue
+
+            if entity.cooldown > 0:
+                entity.cooldown -= dt
+
+            if entity.cooldown <= 0:
+                self.turn_active = True
+                self._take_turn(entity)
+                break
 
     def _party_keys(self):
         return sorted(self.battle_state.party.characters.keys())
 
-    # -- party turns ---------------------------------------------------
+    # -- turns ---------------------------------------------------
 
-    def _take_party_turn(self, index: int) -> None:
-        keys = self._party_keys()
+    def _take_turn(self, entity: Any) -> None:
+        if entity in self.battle_state.party.characters.values():
+            self._take_party_turn(entity)
+        else:
+            self._take_enemy_turn(entity)
 
-        if index >= len(keys):
-            self._take_enemy_turn(0)
-            return
-
-        character = self.battle_state.party.characters[keys[index]]
-
-        if character.dead:
-            self._take_party_turn(index + 1)
-            return
-
+    def _take_party_turn(self, character: Any) -> None:
         from src.states.game.BattleMessageState import BattleMessageState
 
         self.state_machine.push(
             BattleMessageState(self.state_machine),
             battle_state=self.battle_state,
             message=f"Turn for {character.name}! Select an action.",
-            on_close=lambda: self._prompt_action(character, index),
+            on_close=lambda: self._prompt_action(character),
         )
 
-    def _prompt_action(self, character: Any, index: int) -> None:
+    def _prompt_action(self, character: Any) -> None:
         from src.states.game.SelectActionState import SelectActionState
 
         def on_action_selected() -> None:
             if all(enemy.dead for enemy in self.battle_state.enemies):
                 self._victory()
             else:
-                self._take_party_turn(index + 1)
+                self.turn_active = False
 
         self.state_machine.push(
             SelectActionState(self.state_machine),
@@ -76,21 +99,12 @@ class TakeTurnState(BaseState):
 
     # -- enemy turns ----------------------------------------------------
 
-    def _take_enemy_turn(self, index: int) -> None:
-        enemies = self.battle_state.enemies
-
-        if index >= len(enemies):
-            self._take_party_turn(0)
-            return
-
-        enemy = enemies[index]
-
-        if enemy.dead:
-            self._take_enemy_turn(index + 1)
-            return
-
+    def _take_enemy_turn(self, enemy: Any) -> None:
         self.enemy_attacks_in_a_row += 1
         action = random.choice(enemy.actions)
+
+        # Set the enemy's cooldown based on the chosen action
+        enemy.cooldown = action.get("cooldown", enemy.rest_time)
 
         if action["target_type"] == "enemy":
             targets = list(self.battle_state.party.characters.values())
@@ -131,10 +145,10 @@ class TakeTurnState(BaseState):
                 and enemy.klass == "boss"
                 and random.randint(1, 3) == 1
             ):
-                self._take_enemy_turn(index)
+                self._take_enemy_turn(enemy)
             else:
                 self.enemy_attacks_in_a_row = 0
-                self._take_enemy_turn(index + 1)
+                self.turn_active = False
 
         self.state_machine.push(
             BattleMessageState(self.state_machine),
