@@ -46,6 +46,9 @@ class Bird:
         self.initial_position = pygame.Vector2(x, y)
         self.image = settings.TEXTURES[BIRD["sprite"]]
 
+        self.has_split = False
+        self.has_collided = False
+
     @property
     def position(self) -> pygame.Vector2:
         return self.body.position
@@ -60,9 +63,32 @@ class Bird:
         self.body.velocity = (0, 0)
         self.body.angular_velocity = 0.0
 
+        self.has_split = False
+        self.has_collided = False
+
     def render(self, surface: pygame.Surface, camera) -> None:
         diameter = max(1, round(self.radius * 2 * camera.zoom))
         scaled = pygame.transform.smoothscale(self.image, (diameter, diameter))
         rotated = pygame.transform.rotate(scaled, -math.degrees(self.body.angle))
         rect = rotated.get_rect(center=camera.world_to_screen(self.body.position))
         surface.blit(rotated, rect)
+
+    def clone_with_deviation(self, world: World, angle_offset: float, y_offset: float) -> "Bird":
+        new_bird = Bird(world, self.position.x, self.position.y + y_offset)
+        
+        velocity = pygame.Vector2(self.body.velocity.x, self.body.velocity.y)
+        new_velocity = velocity.rotate(angle_offset)
+        
+        new_bird.body.velocity = (new_velocity.x, new_velocity.y)
+        new_bird.body.angular_velocity = self.body.angular_velocity
+        
+        return new_bird
+
+    def check_collisions(self) -> None:
+        if self.has_collided:
+            return
+
+        for other in self.body.touching_bodies:
+            if other.user_data != "wind":
+                self.has_collided = True
+                break

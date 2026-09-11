@@ -113,6 +113,8 @@ class PlayState(BaseState):
         self.pressed_camera_target = pygame.Vector2()
         self.aim_offset = pygame.Vector2()
 
+        self.bird_clones = []
+
     def fixed_update(self) -> None:
         # Driven by gale.game.Game's own accumulator (added in gale
         # 1.10.0) instead of calling self.world.update(dt) here, which
@@ -120,6 +122,7 @@ class PlayState(BaseState):
         # World's own.
         self.world.fixed_update()
         self.level.fixed_update()
+        self.bird.check_collisions()
 
     def update(self, dt: float) -> None:
         self.level.update(dt)
@@ -157,18 +160,27 @@ class PlayState(BaseState):
         self.bird.body.angular_velocity = 0.0
 
     def _update_idle(self) -> None:
-        linear_speed = self.bird.body.velocity.length()
-        angular_speed = abs(self.bird.body.angular_velocity)
+        birds = [self.bird] + self.bird_clones
+        all_idle = True
 
-        if (
-            linear_speed < IDLE_LINEAR_SPEED_THRESHOLD
-            and angular_speed < IDLE_ANGULAR_SPEED_THRESHOLD
-        ):
+        for bird in birds:
+            linear_speed = bird.body.velocity.length()
+            angular_speed = abs(bird.body.angular_velocity)
+            if linear_speed >= IDLE_LINEAR_SPEED_THRESHOLD or angular_speed >= IDLE_ANGULAR_SPEED_THRESHOLD:
+                all_idle = False
+                break
+
+        if all_idle:
             self.idle_frames += 1
 
             if self.idle_frames > IDLE_FRAMES_LIMIT:
                 self.flinging = False
                 self.idle_frames = 0
+
+                for bird_clone in self.bird_clones:
+                    self.world.destroy_body(bird_clone.body)
+                
+                self.bird_clones = []
                 self.bird.reset()
                 self.camera_target.update(self.bird.position)
         else:
@@ -189,6 +201,9 @@ class PlayState(BaseState):
         self.level.render(surface, self.camera)
         self.bird.render(surface, self.camera)
 
+        for bird in self.bird_clones:
+            bird.render(surface, self.camera)
+
         if self.aiming:
             self._render_pull_line(surface)
 
@@ -204,6 +219,8 @@ class PlayState(BaseState):
             self._on_touch(input_data)
         elif input_id == "touch_motion":
             self._on_touch_motion(input_data)
+        elif input_id == "split" and input_data.pressed:
+            self._split_bird()
 
     def _mouse_to_virtual(self, position) -> pygame.Vector2:
         scale_x = settings.VIRTUAL_WIDTH / settings.WINDOW_WIDTH
@@ -270,3 +287,14 @@ class PlayState(BaseState):
                 left - CAMERA_PAN_MARGIN, min(right + CAMERA_PAN_MARGIN, target.x)
             )
             self.camera_target.update(target)
+
+    def _split_bird(self) -> None:
+        if self.flinging and not self.bird.has_split and not self.bird.has_collided:
+            self.bird.has_split = True
+            
+            offset = self.bird.radius * 2
+
+            bird_1 = self.bird.clone_with_deviation(self.world, -15, -offset)
+            bird_2 = self.bird.clone_with_deviation(self.world, 15, offset)
+
+            self.bird_clones.extend([bird_1, bird_2])
